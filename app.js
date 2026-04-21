@@ -324,10 +324,12 @@ ZG7 #E2A9D2
 ZG8 #AB91C0
 `;
 
-const MARD_COLORS = MARD_DATA.trim().split("\n").map((line) => {
-  const [code, hex] = line.trim().split(/\s+/);
-  return { code, name: `MARD ${code}`, hex };
-});
+const MARD_COLORS = MARD_DATA.trim()
+  .split("\n")
+  .map((line) => {
+    const [code, hex] = line.trim().split(/\s+/);
+    return { code, name: `MARD ${code}`, hex };
+  });
 
 const MARD_RGB = MARD_COLORS.map((color) => ({
   ...color,
@@ -373,7 +375,10 @@ const SERIES_SEARCH_TERMS = {
 function updateLabels() {
   gridWidthValue.textContent = String(gridWidthInput.value);
   sizeChips.forEach((chip) => {
-    chip.classList.toggle("active", chip.dataset.width === gridWidthInput.value);
+    chip.classList.toggle(
+      "active",
+      chip.dataset.width === gridWidthInput.value,
+    );
   });
 }
 
@@ -459,7 +464,7 @@ function getEffectiveGridSize(image) {
   const effectiveWidth = Math.max(1, Math.min(maxGridWidth, sourceWidth));
   const effectiveHeight = Math.max(
     1,
-    Math.round(effectiveWidth * (sourceHeight / sourceWidth))
+    Math.round(effectiveWidth * (sourceHeight / sourceWidth)),
   );
 
   return {
@@ -476,9 +481,14 @@ function denoisePixels(pixels, width, height) {
   const result = [...pixels];
   let changes = 0;
   const directions = [
-    [-1, -1], [0, -1], [1, -1],
-    [-1, 0],            [1, 0],
-    [-1, 1],  [0, 1],   [1, 1],
+    [-1, -1],
+    [0, -1],
+    [1, -1],
+    [-1, 0],
+    [1, 0],
+    [-1, 1],
+    [0, 1],
+    [1, 1],
   ];
 
   for (let y = 0; y < height; y += 1) {
@@ -495,16 +505,21 @@ function denoisePixels(pixels, width, height) {
           continue;
         }
         const neighbor = pixels[ny * width + nx];
-        neighborCounts.set(neighbor.code, (neighborCounts.get(neighbor.code) || 0) + 1);
+        neighborCounts.set(
+          neighbor.code,
+          (neighborCounts.get(neighbor.code) || 0) + 1,
+        );
         if (neighbor.code === current.code) {
           sameCount += 1;
         }
       }
 
+      // 如果已经有至少2个相同邻居，则保留当前像素
       if (sameCount >= 2) {
         continue;
       }
 
+      // 找到最常见的邻居颜色
       let bestCode = current.code;
       let bestCount = 0;
       for (const [code, count] of neighborCounts.entries()) {
@@ -514,11 +529,52 @@ function denoisePixels(pixels, width, height) {
         }
       }
 
-      if (bestCode !== current.code && bestCount >= 4) {
+      // 只有当满足以下条件时才替换：
+      // 1. 最佳邻居颜色出现次数 >= 6 (8个方向中的大多数)
+      // 2. 当前像素没有任何相同颜色的邻居 (完全孤立)
+      if (bestCode !== current.code && bestCount >= 6 && sameCount === 0) {
         const replacement = MARD_RGB.find((color) => color.code === bestCode);
         if (replacement) {
           result[index] = replacement;
           changes += 1;
+        }
+      }
+
+      // 添加额外检查：如果当前像素是小区域的一部分（如眼睛、小细节等），则保留它
+      // 检查是否这是一个小的相同颜色区域
+      else if (bestCode !== current.code && sameCount === 0 && bestCount >= 4) {
+        // 检查这个像素是否属于一个小的连通区域
+        let connectedCount = 1; // 包括自己
+        // 检查周围两圈的像素，看是否存在同色连接
+        for (let dy = -2; dy <= 2; dy++) {
+          for (let dx = -2; dx <= 2; dx++) {
+            if (dx === 0 && dy === 0) continue;
+
+            const nx = x + dx;
+            const ny = y + dy;
+            if (nx >= 0 && ny >= 0 && nx < width && ny < height) {
+              const neighbor = pixels[ny * width + nx];
+              if (neighbor.code === current.code) {
+                connectedCount++;
+              }
+            }
+          }
+        }
+
+        // 如果这个颜色区域非常小（如1-3个像素），可能是重要的细节，保留它
+        if (connectedCount <= 3) {
+          // 保持原样，不替换
+        } else {
+          // 如果区域较大，可以考虑替换
+          if (bestCount >= 6) {
+            const replacement = MARD_RGB.find(
+              (color) => color.code === bestCode,
+            );
+            if (replacement) {
+              result[index] = replacement;
+              changes += 1;
+            }
+          }
         }
       }
     }
@@ -719,6 +775,24 @@ function renderSvgPattern(pixels, width, height, cellSize, showGrid) {
       rect.setAttribute("vector-effect", "non-scaling-stroke");
     }
     outputSvg.appendChild(rect);
+
+    // 添加色值文本标签 - 现在无论格子大小如何都会显示
+    const text = document.createElementNS(ns, "text");
+    text.setAttribute("x", String(x + cellSize / 2));
+    text.setAttribute("y", String(y + cellSize / 2));
+    // 根据格子大小动态调整字体大小
+    const fontSize = Math.max(6, cellSize * 0.4);
+    text.setAttribute("font-size", String(fontSize));
+    text.setAttribute("text-anchor", "middle");
+    text.setAttribute("dominant-baseline", "middle");
+    // 根据背景色决定文字颜色以提高可读性
+    const brightness =
+      (color.rgb[0] * 299 + color.rgb[1] * 587 + color.rgb[2] * 114) / 1000;
+    text.setAttribute("fill", brightness > 128 ? "#000000" : "#FFFFFF");
+    text.setAttribute("pointer-events", "none"); // 防止文本影响点击事件
+    text.textContent = color.code; // 显示色号
+
+    outputSvg.appendChild(text);
   });
 }
 
@@ -734,7 +808,8 @@ function exportPatternWithLegend() {
   const patternWidth = state.gridWidth * exportCellSize;
   const patternHeight = state.gridHeight * exportCellSize;
   const legendWidth = Math.max(patternWidth, 820);
-  const legendHeightEstimate = Math.ceil(entries.length / Math.max(1, Math.floor(legendWidth / 190))) * 28;
+  const legendHeightEstimate =
+    Math.ceil(entries.length / Math.max(1, Math.floor(legendWidth / 190))) * 28;
   const footerHeight = 88 + legendHeightEstimate;
 
   const canvas = document.createElement("canvas");
@@ -751,12 +826,15 @@ function exportPatternWithLegend() {
 
   ctx.fillStyle = "#745f52";
   ctx.font = "14px 'Noto Sans SC', sans-serif";
-  const recommended = Math.max(state.gridWidth, state.gridHeight) <= 52 ? 52 : 104;
-  const boardCount = Math.ceil(state.gridWidth / recommended) * Math.ceil(state.gridHeight / recommended);
+  const recommended =
+    Math.max(state.gridWidth, state.gridHeight) <= 52 ? 52 : 104;
+  const boardCount =
+    Math.ceil(state.gridWidth / recommended) *
+    Math.ceil(state.gridHeight / recommended);
   ctx.fillText(
     `${state.gridWidth} × ${state.gridHeight} 格  ·  ${state.gridWidth * state.gridHeight} 颗  ·  推荐 ${recommended}×${recommended} 板 ${boardCount} 块`,
     padding,
-    66
+    66,
   );
 
   state.quantizedPixels.forEach((color, index) => {
@@ -773,6 +851,24 @@ function exportPatternWithLegend() {
       ctx.lineWidth = 1;
       ctx.strokeRect(left, top, exportCellSize, exportCellSize);
     }
+
+    // 添加色号文本
+    const fontSize = Math.max(6, exportCellSize * 0.4);
+    ctx.font = `${fontSize}px 'Noto Sans SC', sans-serif`;
+
+    // 根据背景色决定文字颜色以提高可读性
+    const brightness =
+      (color.rgb[0] * 299 + color.rgb[1] * 587 + color.rgb[2] * 114) / 1000;
+    ctx.fillStyle = brightness > 128 ? "#000000" : "#FFFFFF";
+
+    // 居中放置文本
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(
+      color.code,
+      left + exportCellSize / 2,
+      top + exportCellSize / 2,
+    );
   });
 
   ctx.fillStyle = "#2d1f18";
@@ -780,7 +876,13 @@ function exportPatternWithLegend() {
   const legendTop = titleHeight + patternHeight + 36;
   ctx.fillText("MARD 色号图例", padding, legendTop);
 
-  drawLegendBlock(ctx, entries, padding, legendTop + 18, canvas.width - padding * 2);
+  drawLegendBlock(
+    ctx,
+    entries,
+    padding,
+    legendTop + 18,
+    canvas.width - padding * 2,
+  );
 
   const link = document.createElement("a");
   link.href = canvas.toDataURL("image/png");
@@ -804,7 +906,12 @@ function renderBeadPattern() {
   offscreenCtx.imageSmoothingEnabled = true;
   offscreenCtx.drawImage(state.image, 0, 0, state.gridWidth, state.gridHeight);
 
-  const imageData = offscreenCtx.getImageData(0, 0, state.gridWidth, state.gridHeight);
+  const imageData = offscreenCtx.getImageData(
+    0,
+    0,
+    state.gridWidth,
+    state.gridHeight,
+  );
   const mappedPixels = [];
   for (let i = 0; i < imageData.data.length; i += 4) {
     mappedPixels.push(
@@ -812,10 +919,14 @@ function renderBeadPattern() {
         imageData.data[i],
         imageData.data[i + 1],
         imageData.data[i + 2],
-      ])
+      ]),
     );
   }
-  const denoised = denoisePixels(mappedPixels, state.gridWidth, state.gridHeight);
+  const denoised = denoisePixels(
+    mappedPixels,
+    state.gridWidth,
+    state.gridHeight,
+  );
   const pixels = denoised.pixels;
   state.quantizedPixels = pixels;
   state.denoiseChanges = denoised.changes;
@@ -836,7 +947,7 @@ function renderBeadPattern() {
     state.gridWidth,
     state.gridHeight,
     state.cellSize,
-    showGridInput.checked
+    showGridInput.checked,
   );
   renderPaletteList(counts);
   renderBoardSummary();
@@ -850,7 +961,9 @@ function renderBeadPattern() {
     ? `已清理 ${state.denoiseChanges} 处孤立杂色`
     : "未检测到明显杂色";
   statusText.textContent = `拼豆图已生成，${scaleNote}，${denoiseNote}。`;
-  updateRenderInfo(`${state.gridWidth} × ${state.gridHeight} 格 · 预览 ${state.cellSize}px/格`);
+  updateRenderInfo(
+    `${state.gridWidth} × ${state.gridHeight} 格 · 预览 ${state.cellSize}px/格`,
+  );
   downloadBtn.disabled = false;
 }
 
@@ -916,6 +1029,7 @@ colorSearch.addEventListener("input", renderColorChart);
 
 updateLabels();
 renderColorChart();
-boardSummary.innerHTML = "等待图片。当前色表已切换为 MARD，并按你提供的 Pixel-Beads 色卡页接入。";
+boardSummary.innerHTML =
+  "等待图片。当前色表已切换为 MARD，并按你提供的 Pixel-Beads 色卡页接入。";
 sourceInfo.textContent = "等待图片...";
 updateRenderInfo("未生成");
