@@ -1,0 +1,14 @@
+page {
+  background: #f3f4f6;
+  color: #1f2937;
+  font-family: "PingFang SC", "Helvetica Neue", sans-serif;
+}
+
+view,
+text,
+button,
+input,
+slider,
+switch {
+  box-sizing: border-box;
+}

@@ -1,0 +1,295 @@
+.page {
+  height: 100vh;
+  padding: 24rpx;
+}
+
+.hero,
+.card {
+  background: #ffffff;
+  border: 1px solid #dde3ea;
+  border-radius: 24rpx;
+  box-shadow: 0 16rpx 40rpx rgba(15, 23, 42, 0.08);
+}
+
+.hero {
+  padding: 32rpx;
+  display: flex;
+  justify-content: space-between;
+  gap: 24rpx;
+  margin-bottom: 24rpx;
+}
+
+.eyebrow {
+  font-size: 22rpx;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: #2b72ff;
+  margin-bottom: 12rpx;
+}
+
+.title {
+  font-size: 52rpx;
+  font-weight: 800;
+  color: #1f2937;
+  margin-bottom: 12rpx;
+}
+
+.subtitle {
+  font-size: 26rpx;
+  line-height: 1.6;
+  color: #66758a;
+}
+
+.layout {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.sidebar,
+.workspace,
+.lower-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.section {
+  padding: 28rpx;
+}
+
+.section-header,
+.workspace-header,
+.chart-head,
+.switch-row,
+.label-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.section-header,
+.workspace-header,
+.chart-head {
+  align-items: flex-start;
+}
+
+.badge {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 999rpx;
+  background: #e8f0ff;
+  color: #1552c0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+.section-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.section-desc,
+.status,
+.chart-label,
+.chart-count,
+.used-hex,
+.note,
+.board-text,
+.stat-label {
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: #66758a;
+}
+
+.primary-btn,
+.ghost-btn {
+  border-radius: 999rpx;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.primary-btn {
+  background: linear-gradient(135deg, #2b72ff, #1552c0);
+  color: #ffffff;
+}
+
+.ghost-btn {
+  background: #ffffff;
+  border: 1px solid #dde3ea;
+  color: #1f2937;
+}
+
+.note,
+.board-item,
+.stat-box,
+.empty-box {
+  background: #f8fafc;
+  border: 1px solid #dde3ea;
+  border-radius: 18rpx;
+  padding: 18rpx 20rpx;
+}
+
+.label-row,
+.switch-row {
+  margin-top: 20rpx;
+  align-items: center;
+  font-size: 26rpx;
+  color: #1f2937;
+}
+
+.preset-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 12rpx;
+}
+
+.preset {
+  padding: 10rpx 18rpx;
+  border-radius: 999rpx;
+  border: 1px solid #dde3ea;
+  background: #ffffff;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.preset-active {
+  background: #e8f0ff;
+  border-color: #b6ccff;
+  color: #1552c0;
+}
+
+.render-tag {
+  padding: 12rpx 18rpx;
+  border-radius: 999rpx;
+  background: #e8f0ff;
+  color: #1552c0;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16rpx;
+  margin-top: 20rpx;
+}
+
+.stat-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+
+.stat-value {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.canvas-grid,
+.lower-grid {
+  display: flex;
+  flex-direction: column;
+}
+
+.canvas-grid {
+  gap: 20rpx;
+  margin-top: 20rpx;
+}
+
+.canvas-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.canvas-title {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #66758a;
+}
+
+.canvas-box {
+  border-radius: 18rpx;
+  border: 1px solid #dde3ea;
+  background: #ffffff;
+}
+
+.used-list,
+.chart-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 14rpx;
+  margin-top: 20rpx;
+}
+
+.used-item,
+.chart-item {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 16rpx 18rpx;
+  border-radius: 18rpx;
+  background: #f8fafc;
+  border: 1px solid #dde3ea;
+}
+
+.swatch,
+.chart-swatch {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 12rpx;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
+}
+
+.used-meta,
+.chart-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.used-code,
+.chart-code,
+.board-title,
+.chart-series {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.used-count {
+  font-size: 34rpx;
+  font-weight: 800;
+  color: #1f2937;
+}
+
+.search {
+  margin-top: 20rpx;
+  border-radius: 18rpx;
+  border: 1px solid #dde3ea;
+  background: #ffffff;
+  padding: 20rpx;
+  font-size: 26rpx;
+}
+
+.chart-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  margin-top: 14rpx;
+}
+
+.hidden-canvas {
+  position: fixed;
+  left: -9999px;
+  top: -9999px;
+  width: 1px;
+  height: 1px;
+}

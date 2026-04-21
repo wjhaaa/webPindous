@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>拼豆像素图生成器</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="hero">
+        <div class="hero-copy-group">
+          <p class="eyebrow">参考 Pixel-Beads 生成器工作流</p>
+          <h1>拼豆图案生成器</h1>
+          <p class="hero-copy">
+            上传图片后自动转成拼豆网格，按 MARD 官方色号匹配，并输出适合制作和打印的图例版 PNG。
+          </p>
+        </div>
+        <div class="hero-actions">
+          <div class="brand-pill">品牌色库：MARD</div>
+          <button id="downloadBtn" class="ghost-button" disabled>导出拼豆图 PNG</button>
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="panel controls-panel">
+          <div class="tool-section">
+            <div class="tool-section-header">
+              <span class="tool-index">1</span>
+              <div>
+                <h3>上传图片</h3>
+                <p>选择要转换的参考图</p>
+              </div>
+            </div>
+            <label class="upload-card" for="imageInput">
+              <input id="imageInput" type="file" accept="image/*" />
+              <span class="upload-title">选择图像</span>
+              <span class="upload-hint">支持 JPG、PNG、WEBP</span>
+            </label>
+            <div id="sourceInfo" class="compact-note">等待图片...</div>
+          </div>
+
+          <div class="tool-section">
+            <div class="tool-section-header">
+              <span class="tool-index">2</span>
+              <div>
+                <h3>图案尺寸</h3>
+                <p>小图保持原尺寸，大图按上限缩小</p>
+              </div>
+            </div>
+            <div class="control-group">
+              <label for="gridWidth">最大拼豆宽度：<span id="gridWidthValue">52</span> 格</label>
+              <input id="gridWidth" type="range" min="16" max="208" step="1" value="52" />
+              <div class="size-presets">
+                <button type="button" class="size-chip" data-width="16">16</button>
+                <button type="button" class="size-chip" data-width="29">29</button>
+                <button type="button" class="size-chip active" data-width="52">52</button>
+                <button type="button" class="size-chip" data-width="104">104</button>
+              </div>
+              <p class="control-hint">常用规格参考：钥匙扣 16、常规小图 29、大板 52、双板级 104。</p>
+            </div>
+            <div class="control-group inline-toggle">
+              <label for="showGrid">显示网格线</label>
+              <input id="showGrid" type="checkbox" checked />
+            </div>
+            <button id="renderBtn" class="primary-button" disabled>生成拼豆图案</button>
+            <p id="statusText" class="status-text">请先上传一张图片。</p>
+          </div>
+
+          <div class="tool-section">
+            <div class="tool-section-header">
+              <span class="tool-index">3</span>
+              <div>
+                <h3>板子判断</h3>
+                <p>自动判断 52 / 104 规格</p>
+              </div>
+            </div>
+            <div class="board-card">
+              <div id="boardSummary" class="board-summary">等待图片...</div>
+              <div id="boardOptions" class="board-options"></div>
+            </div>
+          </div>
+
+          <div class="tool-section">
+            <div class="tool-section-header">
+              <span class="tool-index">4</span>
+              <div>
+                <h3>导出</h3>
+                <p>附带 MARD 色号图例</p>
+              </div>
+            </div>
+            <div class="compact-note">导出 PNG 会包含网格图案、板子规格和所用色号清单。</div>
+          </div>
+        </section>
+
+        <section class="workspace">
+          <section class="panel preview-panel">
+            <div class="canvas-header">
+              <div>
+                <h2>图案结果</h2>
+                <p id="gridMeta">等待图片...</p>
+              </div>
+              <div id="renderInfo" class="render-badge">未生成</div>
+            </div>
+            <div class="stats-row">
+              <div class="stat-card">
+                <span class="stat-label">色库</span>
+                <strong>MARD</strong>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">输出类型</span>
+                <strong>像素拼豆图</strong>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">导出内容</span>
+                <strong>图案 + 图例</strong>
+              </div>
+            </div>
+            <div class="canvas-stack">
+              <div class="canvas-card">
+                <span class="canvas-label">原图预览</span>
+                <canvas id="sourceCanvas"></canvas>
+              </div>
+              <div class="canvas-card">
+                <span class="canvas-label">拼豆图预览（SVG）</span>
+                <div class="svg-stage">
+                  <svg id="outputSvg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="拼豆图预览"></svg>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="workspace-lower">
+            <section class="panel palette-panel">
+              <div class="canvas-header">
+                <div>
+                  <h2>已用颜色</h2>
+                  <p>显示本次图案实际用到的 MARD 色号、HEX 和颗数。</p>
+                </div>
+              </div>
+              <div id="paletteList" class="palette-list empty-state">
+                上传图片后会在这里生成拼豆颜色统计。
+              </div>
+            </section>
+
+            <section class="panel chart-panel">
+              <div class="canvas-header">
+                <div>
+                  <h2>MARD 色卡查询</h2>
+                  <p>按系列浏览 A / B / C... 色卡，支持色号、HEX 和中文分类搜索。</p>
+                </div>
+                <label class="search-input">
+                  <span>色号搜索</span>
+                  <input id="colorSearch" type="search" placeholder="搜索 A1 / 蓝色系 / #1A60C3" />
+                </label>
+              </div>
+              <div id="colorChart" class="chart-groups"></div>
+            </section>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

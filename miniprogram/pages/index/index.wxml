@@ -1,0 +1,165 @@
+<scroll-view class="page" scroll-y>
+  <view class="hero card">
+    <view>
+      <view class="eyebrow">微信小程序版 / MARD 色库</view>
+      <view class="title">拼豆图案生成器</view>
+      <view class="subtitle">上传图片后自动转成拼豆网格，按 MARD 官方色号匹配，并生成带图例的导出图。</view>
+    </view>
+    <button class="ghost-btn" bindtap="handleExport" disabled="{{!canExport}}">导出 PNG</button>
+  </view>
+
+  <view class="layout">
+    <view class="sidebar">
+      <view class="card section">
+        <view class="section-header">
+          <view class="badge">1</view>
+          <view>
+            <view class="section-title">上传图片</view>
+            <view class="section-desc">支持相册和拍照</view>
+          </view>
+        </view>
+        <button class="primary-btn" bindtap="handleChooseImage">选择图片</button>
+        <view class="note">{{sourceInfo}}</view>
+      </view>
+
+      <view class="card section">
+        <view class="section-header">
+          <view class="badge">2</view>
+          <view>
+            <view class="section-title">图案尺寸</view>
+            <view class="section-desc">小图保留原尺寸，大图按上限缩小</view>
+          </view>
+        </view>
+        <view class="label-row">
+          <text>最大拼豆宽度</text>
+          <text>{{gridWidth}} 格</text>
+        </view>
+        <slider min="16" max="208" step="1" value="{{gridWidth}}" bindchanging="handleWidthChanging" bindchange="handleWidthChange" activeColor="#2b72ff" block-color="#2b72ff" />
+        <view class="preset-row">
+          <block wx:for="{{sizePresets}}" wx:key="value">
+            <view class="preset {{item.active ? 'preset-active' : ''}}" data-width="{{item.value}}" bindtap="handlePresetTap">{{item.value}}</view>
+          </block>
+        </view>
+        <view class="switch-row">
+          <text>显示网格线</text>
+          <switch checked="{{showGrid}}" bindchange="handleToggleGrid" color="#2b72ff" />
+        </view>
+        <button class="primary-btn" bindtap="handleRender" disabled="{{!hasImage}}">生成拼豆图案</button>
+        <view class="status">{{statusText}}</view>
+      </view>
+
+      <view class="card section">
+        <view class="section-header">
+          <view class="badge">3</view>
+          <view>
+            <view class="section-title">板子判断</view>
+            <view class="section-desc">自动判断 52 / 104 规格</view>
+          </view>
+        </view>
+        <view class="note">{{boardSummary}}</view>
+        <block wx:for="{{boardOptions}}" wx:key="title">
+          <view class="board-item">
+            <view class="board-title">{{item.title}}</view>
+            <view class="board-text">{{item.text}}</view>
+          </view>
+        </block>
+      </view>
+    </view>
+
+    <view class="workspace">
+      <view class="card section">
+        <view class="workspace-header">
+          <view>
+            <view class="section-title">图案结果</view>
+            <view class="section-desc">{{gridMeta}}</view>
+          </view>
+          <view class="render-tag">{{renderInfo}}</view>
+        </view>
+
+        <view class="stats">
+          <view class="stat-box">
+            <text class="stat-label">色库</text>
+            <text class="stat-value">MARD</text>
+          </view>
+          <view class="stat-box">
+            <text class="stat-label">输出类型</text>
+            <text class="stat-value">像素拼豆图</text>
+          </view>
+          <view class="stat-box">
+            <text class="stat-label">导出内容</text>
+            <text class="stat-value">图案 + 图例</text>
+          </view>
+        </view>
+
+        <view class="canvas-grid">
+          <view class="canvas-panel">
+            <view class="canvas-title">原图预览</view>
+            <canvas id="sourceCanvas" type="2d" class="canvas-box" style="{{sourceCanvasStyle}}"></canvas>
+          </view>
+          <view class="canvas-panel">
+            <view class="canvas-title">拼豆图预览</view>
+            <canvas id="previewCanvas" type="2d" class="canvas-box" style="{{previewCanvasStyle}}"></canvas>
+          </view>
+        </view>
+      </view>
+
+      <view class="lower-grid">
+        <view class="card section">
+          <view class="section-title">已用颜色</view>
+          <view class="section-desc">显示本次图案实际用到的 MARD 色号、HEX 和颗数。</view>
+          <view wx:if="{{usedColors.length === 0}}" class="empty-box">上传图片后会在这里生成拼豆颜色统计。</view>
+          <view wx:else class="used-list">
+            <block wx:for="{{usedColors}}" wx:key="code">
+              <view class="used-item">
+                <view class="swatch" style="background: {{item.hex}};"></view>
+                <view class="used-meta">
+                  <view class="used-code">MARD {{item.code}}</view>
+                  <view class="used-hex">{{item.hex}}</view>
+                </view>
+                <view class="used-count">{{item.count}}</view>
+              </view>
+            </block>
+          </view>
+        </view>
+
+        <view class="card section">
+          <view class="workspace-header">
+            <view>
+              <view class="section-title">MARD 色卡查询</view>
+              <view class="section-desc">按系列浏览 A / B / C... 色卡，支持色号、HEX 和中文分类搜索。</view>
+            </view>
+          </view>
+          <input class="search" placeholder="搜索 A1 / 蓝色系 / #1A60C3" value="{{colorSearch}}" bindinput="handleSearchInput" />
+          <view wx:if="{{colorSections.length === 0}}" class="empty-box">没有匹配到色号，请换个关键词试试。</view>
+          <view wx:else class="chart-sections">
+            <block wx:for="{{colorSections}}" wx:key="series">
+              <view class="chart-section">
+                <view class="chart-head">
+                  <view>
+                    <view class="chart-series">{{item.series}} 系列</view>
+                    <view class="chart-label">{{item.label}}</view>
+                  </view>
+                  <view class="chart-count">{{item.count}} 色</view>
+                </view>
+                <view class="chart-grid">
+                  <block wx:for="{{item.colors}}" wx:key="code">
+                    <view class="chart-item">
+                      <view class="chart-swatch" style="background: {{item.hex}};"></view>
+                      <view class="chart-meta">
+                        <view class="chart-code">MARD {{item.code}}</view>
+                        <view class="chart-hex">{{item.hex}}</view>
+                      </view>
+                    </view>
+                  </block>
+                </view>
+              </view>
+            </block>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <canvas id="processCanvas" type="2d" class="hidden-canvas"></canvas>
+  <canvas id="exportCanvas" type="2d" class="hidden-canvas"></canvas>
+</scroll-view>
