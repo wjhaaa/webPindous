@@ -714,8 +714,7 @@ function renderColorChart() {
 function drawLegendBlock(ctx, entries, startX, startY, maxWidth) {
   const itemHeight = 28;
   const swatchSize = 16;
-  const minColumnWidth = 190;
-  const columns = Math.max(1, Math.floor(maxWidth / minColumnWidth));
+  const columns = 5;
   const columnWidth = Math.floor(maxWidth / columns);
 
   entries.forEach(([code, count], index) => {
@@ -732,11 +731,9 @@ function drawLegendBlock(ctx, entries, startX, startY, maxWidth) {
 
     ctx.fillStyle = "#2d1f18";
     ctx.font = "600 12px 'Noto Sans SC', sans-serif";
-    ctx.fillText(`MARD ${code}`, x + 24, y + 10);
-
-    ctx.fillStyle = "#745f52";
-    ctx.font = "12px 'Noto Sans SC', sans-serif";
-    ctx.fillText(`${color.hex}  ·  ${count} 颗`, x + 24, y + 24);
+    ctx.textBaseline = "middle";
+    ctx.textAlign = "left";
+    ctx.fillText(`${color.code}`, x + 24, y + 13);
   });
 
   return Math.ceil(entries.length / columns) * itemHeight;
@@ -851,12 +848,27 @@ function exportPatternWithLegend() {
       ctx.lineWidth = 1;
       ctx.strokeRect(left, top, exportCellSize, exportCellSize);
     }
+
+    // 添加色号文本标签
+    const brightness =
+      (color.rgb[0] * 299 + color.rgb[1] * 587 + color.rgb[2] * 114) / 1000;
+    ctx.fillStyle = brightness > 128 ? "#000000" : "#FFFFFF";
+    ctx.font = `${Math.max(8, exportCellSize * 0.5)}px 'Noto Sans SC', sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(
+      color.code,
+      left + exportCellSize / 2,
+      top + exportCellSize / 2,
+    );
   });
 
   ctx.fillStyle = "#2d1f18";
   ctx.font = "700 18px 'Noto Sans SC', sans-serif";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
   const legendTop = titleHeight + patternHeight + 36;
-  ctx.fillText("MARD 色号图例", padding, legendTop);
+  ctx.fillText("色号图例", padding, legendTop);
 
   drawLegendBlock(
     ctx,
