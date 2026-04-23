@@ -478,6 +478,11 @@ function getEffectiveGridSize(image) {
 }
 
 function denoisePixels(pixels, width, height) {
+  // 对于小尺寸（<= 29），完全禁用去噪，保留所有细节
+  if (width <= 29 || height <= 29) {
+    return { pixels: [...pixels], changes: 0 };
+  }
+
   const result = [...pixels];
   let changes = 0;
   const directions = [
@@ -514,7 +519,8 @@ function denoisePixels(pixels, width, height) {
         }
       }
 
-      // 如果已经有至少2个相同邻居，则保留当前像素
+      // 如果已经有至少1个相同邻居，则保留当前像素
+      // 降低阈值，避免过度去噪
       if (sameCount >= 2) {
         continue;
       }
@@ -530,51 +536,13 @@ function denoisePixels(pixels, width, height) {
       }
 
       // 只有当满足以下条件时才替换：
-      // 1. 最佳邻居颜色出现次数 >= 6 (8个方向中的大多数)
+      // 1. 最佳邻居颜色出现次数 >= 7 (8个方向中的绝大多数)
       // 2. 当前像素没有任何相同颜色的邻居 (完全孤立)
-      if (bestCode !== current.code && bestCount >= 6 && sameCount === 0) {
+      if (bestCode !== current.code && bestCount >= 7 && sameCount === 0) {
         const replacement = MARD_RGB.find((color) => color.code === bestCode);
         if (replacement) {
           result[index] = replacement;
           changes += 1;
-        }
-      }
-
-      // 添加额外检查：如果当前像素是小区域的一部分（如眼睛、小细节等），则保留它
-      // 检查是否这是一个小的相同颜色区域
-      else if (bestCode !== current.code && sameCount === 0 && bestCount >= 4) {
-        // 检查这个像素是否属于一个小的连通区域
-        let connectedCount = 1; // 包括自己
-        // 检查周围两圈的像素，看是否存在同色连接
-        for (let dy = -2; dy <= 2; dy++) {
-          for (let dx = -2; dx <= 2; dx++) {
-            if (dx === 0 && dy === 0) continue;
-
-            const nx = x + dx;
-            const ny = y + dy;
-            if (nx >= 0 && ny >= 0 && nx < width && ny < height) {
-              const neighbor = pixels[ny * width + nx];
-              if (neighbor.code === current.code) {
-                connectedCount++;
-              }
-            }
-          }
-        }
-
-        // 如果这个颜色区域非常小（如1-3个像素），可能是重要的细节，保留它
-        if (connectedCount <= 3) {
-          // 保持原样，不替换
-        } else {
-          // 如果区域较大，可以考虑替换
-          if (bestCount >= 6) {
-            const replacement = MARD_RGB.find(
-              (color) => color.code === bestCode,
-            );
-            if (replacement) {
-              result[index] = replacement;
-              changes += 1;
-            }
-          }
         }
       }
     }
@@ -884,6 +852,32 @@ function exportPatternWithLegend() {
   link.click();
 }
 
+function downsamplePixels(
+  sourcePixels,
+  sourceWidth,
+  sourceHeight,
+  targetWidth,
+  targetHeight,
+) {
+  const scaleX = sourceWidth / targetWidth;
+  const scaleY = sourceHeight / targetHeight;
+  const result = [];
+
+  for (let ty = 0; ty < targetHeight; ty++) {
+    for (let tx = 0; tx < targetWidth; tx++) {
+      const centerX = (tx + 0.5) * scaleX;
+      const centerY = (ty + 0.5) * scaleY;
+      const sourceX = Math.floor(centerX);
+      const sourceY = Math.floor(centerY);
+
+      const index = sourceY * sourceWidth + sourceX;
+      result.push(sourcePixels[index]);
+    }
+  }
+
+  return result;
+}
+
 function renderBeadPattern() {
   if (!state.image) {
     return;
@@ -893,19 +887,17 @@ function renderBeadPattern() {
   state.gridWidth = gridSize.width;
   state.gridHeight = gridSize.height;
 
-  const offscreen = document.createElement("canvas");
-  offscreen.width = state.gridWidth;
-  offscreen.height = state.gridHeight;
-  const offscreenCtx = offscreen.getContext("2d", { willReadFrequently: true });
-  offscreenCtx.imageSmoothingEnabled = true;
-  offscreenCtx.drawImage(state.image, 0, 0, state.gridWidth, state.gridHeight);
+  const sourceWidth = state.image.naturalWidth || state.image.width;
+  const sourceHeight = state.image.naturalHeight || state.image.height;
 
-  const imageData = offscreenCtx.getImageData(
-    0,
-    0,
-    state.gridWidth,
-    state.gridHeight,
-  );
+  const offscreen = document.createElement("canvas");
+  offscreen.width = sourceWidth;
+  offscreen.height = sourceHeight;
+  const offscreenCtx = offscreen.getContext("2d", { willReadFrequently: true });
+  offscreenCtx.imageSmoothingEnabled = false;
+  offscreenCtx.drawImage(state.image, 0, 0, sourceWidth, sourceHeight);
+
+  const imageData = offscreenCtx.getImageData(0, 0, sourceWidth, sourceHeight);
   const mappedPixels = [];
   for (let i = 0; i < imageData.data.length; i += 4) {
     mappedPixels.push(
@@ -916,12 +908,22 @@ function renderBeadPattern() {
       ]),
     );
   }
-  const denoised = denoisePixels(
-    mappedPixels,
-    state.gridWidth,
-    state.gridHeight,
-  );
-  const pixels = denoised.pixels;
+
+  let pixels;
+  if (sourceWidth !== state.gridWidth || sourceHeight !== state.gridHeight) {
+    pixels = downsamplePixels(
+      mappedPixels,
+      sourceWidth,
+      sourceHeight,
+      state.gridWidth,
+      state.gridHeight,
+    );
+  } else {
+    pixels = mappedPixels;
+  }
+
+  const denoised = denoisePixels(pixels, state.gridWidth, state.gridHeight);
+  pixels = denoised.pixels;
   state.quantizedPixels = pixels;
   state.denoiseChanges = denoised.changes;
   state.cellSize = getPreviewCellSize(state.gridWidth, state.gridHeight);
