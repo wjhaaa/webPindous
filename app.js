@@ -851,24 +851,6 @@ function exportPatternWithLegend() {
       ctx.lineWidth = 1;
       ctx.strokeRect(left, top, exportCellSize, exportCellSize);
     }
-
-    // 添加色号文本
-    const fontSize = Math.max(6, exportCellSize * 0.4);
-    ctx.font = `${fontSize}px 'Noto Sans SC', sans-serif`;
-
-    // 根据背景色决定文字颜色以提高可读性
-    const brightness =
-      (color.rgb[0] * 299 + color.rgb[1] * 587 + color.rgb[2] * 114) / 1000;
-    ctx.fillStyle = brightness > 128 ? "#000000" : "#FFFFFF";
-
-    // 居中放置文本
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(
-      color.code,
-      left + exportCellSize / 2,
-      top + exportCellSize / 2,
-    );
   });
 
   ctx.fillStyle = "#2d1f18";
