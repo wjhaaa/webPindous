@@ -275,53 +275,6 @@ P20 #FEBECF
 P21 #ECBEBF
 P22 #E4A89F
 P23 #A56268
-Q1 #F2A5E8
-Q2 #E9EC91
-Q3 #FFFF00
-Q4 #FFEBFA
-Q5 #76CEDE
-R1 #D50D21
-R2 #F92F83
-R3 #FD8324
-R4 #F8EC31
-R5 #35C75B
-R6 #238891
-R7 #19779D
-R8 #1A60C3
-R9 #9A56B4
-R10 #FFDB4C
-R11 #FFEBFA
-R12 #D8D5CE
-R13 #55514C
-R14 #9FE4DF
-R15 #77CEE9
-R16 #3ECFCA
-R17 #4A867A
-R18 #7FCD9D
-R19 #CDE55D
-R20 #E8C7B4
-R21 #AD6F3C
-R22 #6C372F
-R23 #FEB872
-R24 #F3C1C0
-R25 #C9675E
-R26 #D293BE
-R27 #EA8CB1
-R28 #9C87D6
-T1 #FFFFFF
-Y1 #FD6FB4
-Y2 #FEB481
-Y3 #D7FAA0
-Y4 #8BDBFA
-Y5 #E987EA
-ZG1 #DAABB3
-ZG2 #D6AA87
-ZG3 #C1BD8D
-ZG4 #96869F
-ZG5 #8490A6
-ZG6 #94BFE2
-ZG7 #E2A9D2
-ZG8 #AB91C0
 `;
 
 const MARD_COLORS = MARD_DATA.trim()
@@ -365,11 +318,6 @@ const SERIES_SEARCH_TERMS = {
   H: "黑白灰 中性色 灰色系",
   M: "莫兰迪 灰调 低饱和",
   P: "粉彩 马卡龙 柔和色",
-  Q: "荧彩 荧光 亮色",
-  R: "高饱和 鲜艳色 综合色",
-  T: "白色 纯白",
-  Y: "荧光 糖果色",
-  ZG: "珠光 特殊质感 金属感",
 };
 
 function updateLabels() {
@@ -776,21 +724,27 @@ function exportPatternWithLegend() {
   const legendHeightEstimate =
     Math.ceil(entries.length / Math.max(1, Math.floor(legendWidth / 190))) * 28;
   const footerHeight = 88 + legendHeightEstimate;
+  let x = 0,
+    y = 0;
+  state.quantizedPixels.forEach((color) => {
+    const left = padding + x * exportCellSize;
+    const top = titleHeight + y * exportCellSize;
 
-  const canvas = document.createElement("canvas");
-  canvas.width = patternWidth + padding * 2;
-  canvas.height = titleHeight + patternHeight + footerHeight + padding * 2;
-  const ctx = canvas.getContext("2d");
+    ctx.fillStyle = color.hex;
+    ctx.fillRect(left, top, exportCellSize, exportCellSize);
 
-  ctx.fillStyle = "#fffaf6";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+    if (showGridInput.checked) {
+      ctx.strokeStyle = "rgba(61, 36, 24, 0.28)";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(left, top, exportCellSize, exportCellSize);
+    }
 
-  ctx.fillStyle = "#2d1f18";
-  ctx.font = "700 28px 'Noto Sans SC', sans-serif";
-  ctx.fillText("MARD 拼豆图图例", padding, 42);
-
-  ctx.fillStyle = "#745f52";
-  ctx.font = "14px 'Noto Sans SC', sans-serif";
+    x++;
+    if (x >= state.gridWidth) {
+      x = 0;
+      y++;
+    }
+  });
   const recommended =
     Math.max(state.gridWidth, state.gridHeight) <= 52 ? 52 : 104;
   const boardCount =
